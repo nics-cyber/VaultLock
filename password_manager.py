@@ -3,6 +3,8 @@ import os
 import json
 import base64
 import secrets
+import tkinter as tk
+from tkinter import messagebox, simpledialog
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 class PasswordManager:
@@ -53,26 +55,53 @@ class PasswordManager:
             with open(self.file_path, "r") as file:
                 self.passwords = json.load(file)
 
-if __name__ == "__main__":
-    master_pass = input("Set Master Password: ")
-    pm = PasswordManager(master_pass)
+class VaultLockGUI:
+    def __init__(self, root, password_manager):
+        self.root = root
+        self.pm = password_manager
+        self.root.title("VaultLock - Password Manager")
+        self.root.geometry("400x300")
+        
+        self.label = tk.Label(root, text="VaultLock", font=("Arial", 16))
+        self.label.pack(pady=10)
+        
+        self.site_entry = tk.Entry(root, width=30)
+        self.site_entry.pack()
+        self.site_entry.insert(0, "Enter site")
+        
+        self.user_entry = tk.Entry(root, width=30)
+        self.user_entry.pack()
+        self.user_entry.insert(0, "Enter username")
+        
+        self.pass_entry = tk.Entry(root, width=30, show="*")
+        self.pass_entry.pack()
+        self.pass_entry.insert(0, "Enter password")
+        
+        self.add_button = tk.Button(root, text="Add Password", command=self.add_password)
+        self.add_button.pack(pady=5)
+        
+        self.get_button = tk.Button(root, text="Get Password", command=self.get_password)
+        self.get_button.pack(pady=5)
+        
+    def add_password(self):
+        site = self.site_entry.get()
+        username = self.user_entry.get()
+        password = self.pass_entry.get()
+        self.pm.add_password(site, username, password)
+        messagebox.showinfo("Success", "Password saved!")
 
-    while True:
-        choice = input("(1) Add Password\n(2) Get Password\n(3) Exit\nChoose: ")
-        if choice == "1":
-            site = input("Enter site: ")
-            username = input("Enter username: ")
-            password = input("Enter password: ")
-            pm.add_password(site, username, password)
-            print("Password saved!")
-        elif choice == "2":
-            site = input("Enter site: ")
-            data = pm.get_password(site)
-            if data:
-                print(f"Username: {data['username']}, Password: {data['password']}")
-            else:
-                print("No data found!")
-        elif choice == "3":
-            break
+    def get_password(self):
+        site = simpledialog.askstring("Retrieve Password", "Enter site:")
+        data = self.pm.get_password(site)
+        if data:
+            messagebox.showinfo("Password", f"Username: {data['username']}\nPassword: {data['password']}")
         else:
-            print("Invalid choice!")
+            messagebox.showerror("Error", "No data found!")
+
+if __name__ == "__main__":
+    master_pass = simpledialog.askstring("Master Password", "Set Master Password:", show="*")
+    pm = PasswordManager(master_pass)
+    root = tk.Tk()
+    app = VaultLockGUI(root, pm)
+    root.mainloop()
+
